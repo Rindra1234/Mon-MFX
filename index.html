@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Dashboard Pro</title>
+    <style>
+        /* --- LE DESIGN (CSS) --- */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0c29;
+            background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29);
+            color: #00d2ff;
+            text-align: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        input {
+            width: 80%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #00d2ff;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        #liste-noms {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        #liste-noms li {
+            background: rgba(0, 210, 255, 0.1);
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 10px;
+            border-left: 4px solid #e94560;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🚀 My Web App</h1>
+        <p>Gestion SQLite en temps réel</p>
+        
+        <input type="text" id="champ-nom" placeholder="Saisir un nom...">
+        <br>
+        <button onclick="envoyerNom()">Ajouter au Système</button>
+
+        <p id="resultat"></p>
+
+        <hr style="border: 0.5px solid rgba(0,210,255,0.2); margin: 25px 0;">
+
+        <h3>📋 Historique (Base de données)</h3>
+        <ul id="liste-noms"></ul>
+    </div>
+
+    <script>
+        /* --- LA LOGIQUE (JavaScript) --- */
+        
+        // 1. Fonction pour envoyer un nom
+        async function envoyerNom() {
+            const nomSaisi = document.getElementById('champ-nom').value;
+            if (!nomSaisi) return alert("Nom vide !");
+
+            try {
+                const reponse = await fetch('http://127.0.0.1:5000/api/envoyer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nom: nomSaisi })
+                });
+                const data = await reponse.json();
+                document.getElementById('resultat').innerText = data.reponse;
+                document.getElementById('champ-nom').value = ""; // Vide le champ
+                chargerListe(); // Rafraîchit la liste
+            } catch (e) {
+                alert("Erreur : Vérifie Pydroid !");
+            }
+        }
+
+        // 2. Fonction pour charger la liste depuis SQLite
+        async function chargerListe() {
+            try {
+                const reponse = await fetch('http://127.0.0.1:5000/api/liste');
+                const data = await reponse.json();
+                const listeUl = document.getElementById('liste-noms');
+                listeUl.innerHTML = "";
+                data.noms.forEach(nom => {
+                    const li = document.createElement('li');
+                    li.innerText = "👤 " + nom;
+                    listeUl.appendChild(li);
+                });
+            } catch (e) { console.log("Serveur non prêt"); }
+        }
+
+        // Charger la liste dès l'ouverture
+        window.onload = chargerListe;
+    </script>
+</body>
+</html>
+<button onclick="effacerTout()" style="background: #444; margin-top: 10px;">Effacer l'historique</button>
+
+<script>
+async function effacerTout() {
+    if(confirm("Voulez-vous tout supprimer ?")) {
+        await fetch('http://127.0.0.1:5000/api/supprimer', { method: 'DELETE' });
+        chargerListe();
+    }
+}
+</script>
